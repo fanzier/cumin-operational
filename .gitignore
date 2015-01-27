@@ -1,0 +1,13 @@
+.cabal-sandbox/
+.idea/
+cabal.sandbox.config
+*.aux
+*.hi
+*.hp
+*.iml
+*.o
+*.p_hi
+*.prof
+cabal.config
+dist
+*~
