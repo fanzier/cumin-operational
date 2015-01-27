@@ -1,0 +1,45 @@
+
+tMap :: forall a b.(a -> b) -> Pair a a -> Pair b b
+tMap f x = case x of Pair a b -> Pair<:b,b:> (f a) (f b)
+
+inc :: Nat -> Nat
+inc x = x + 1
+
+foo :: Pair Nat Nat
+foo = tMap<:Nat,Nat:> inc (Pair<:Nat,Nat:> 1 3)
+
+pred :: Nat -> Bool
+pred x = not (x == 1)
+
+bar :: [Nat]
+bar = filter<:Nat:> pred [1,4,1,1,2,1,1]<:Nat:>
+
+maybeInc :: Nat -> Nat
+maybeInc x = let c :: Bool free in case c of
+  True  -> x + 1
+  False -> x
+
+maybeInc2 :: Nat -> Nat
+maybeInc2 = let c :: Bool free in case c of
+  True  -> inc
+  False -> id<:Nat:>
+
+doubleInc :: Nat -> Nat
+doubleInc y = let x = maybeInc y in x + x
+
+dup :: forall a.Data a => Pair a a
+dup = let x :: a free in Pair<:a,a:> x x
+
+dup2 :: forall a.Data a => (a,a)
+dup2 = let x :: a free in
+       let y :: a free in
+       Pair<:a,a:> x y
+
+coin :: Nat
+coin = choose<:Nat:> 0 1
+
+double :: Nat -> Nat
+double n = n + n
+
+apply :: forall a b. (a -> b) -> a -> b
+apply f a = f a
