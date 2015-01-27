@@ -25,12 +25,10 @@ library
   ghc-options:  -Wall
   hs-source-dirs:  src
   build-depends:   base
-                 , bound
                  , containers
                  , lens
                  , mtl
                  , ansi-wl-pprint
-                 , prelude-extras
                  , transformers
                  , funlogic-core
                  , language-cumin
@@ -42,7 +40,6 @@ executable cumin-op
   -- other-extensions:
   ghc-options: -Wall
   build-depends:       base >=4.7 && <4.8
-                     , bound
                      , containers
                      , lens
                      , mtl
