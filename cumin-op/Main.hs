@@ -21,8 +21,10 @@ import           Language.CuMin.Prelude        (preludeModule)
 import           Language.CuMin.Pretty
 import           Language.CuMin.TypeChecker
 import           System.Console.Haskeline
+import           System.CPUTime
 import           System.Environment            (getArgs)
 import qualified Text.PrettyPrint.ANSI.Leijen  as PP
+import           Text.Printf
 import           Text.Trifecta
 
 -- * Types
@@ -161,7 +163,7 @@ checkFile cuminFile =
             Right () -> return modulWithPrelude
 
 repl :: StateT ReplState IO ()
-repl = mapStateT (runInputT defaultSettings) loop -- TODO: Ctrl-C handling!
+repl = mapStateT (runInputT defaultSettings) loop
 
 loop :: StateT ReplState (InputT IO) ()
 loop = do
@@ -174,8 +176,8 @@ loop = do
       Failure msg -> liftIO (PP.putDoc $ msg PP.<> PP.line) >> loop
       Success cmd -> case cmd of
         Quit -> liftIO $ putStrLn "Bye."
-        Eval expr -> printExprTypeAndThen expr (evalExpr env) >> loop
-        Force expr -> printExprTypeAndThen expr (forceExpr env) >> loop
+        Eval expr -> timedAndInterruptible (printExprTypeAndThen expr (evalExpr env)) >> loop
+        Force expr -> timedAndInterruptible (printExprTypeAndThen expr (forceExpr env)) >> loop
         SetProperty f -> modify f >> loop
         GetProperties -> prettyProperties >>= liftIO . PP.putDoc >> loop
         Help -> liftIO (PP.putDoc $ prettyHelp PP.<> PP.line) >> loop
@@ -196,6 +198,18 @@ loop = do
       DFS -> return dfsTraverse
     depthLimit <- use depth
     return $ traverseFunction depthLimit
+
+timedAndInterruptible :: StateT ReplState (InputT IO) () -> StateT ReplState (InputT IO) ()
+timedAndInterruptible action = do
+  state <- get
+  let handler = outputStrLn "Interrupted." >> evalStateT loop state
+  lift . withInterrupt . handleInterrupt handler . flip evalStateT state $ do
+    startTime <- liftIO getCPUTime
+    action
+    endTime <- liftIO getCPUTime
+    let elapsed = realToFrac (endTime - startTime) / (1e12 :: Double)
+    lift $ outputStrLn $ "CPU time elapsed: " ++ printf "%.3f s" elapsed
+
 
 -- * Helper functions
 
