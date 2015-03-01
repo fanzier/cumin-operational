@@ -202,13 +202,18 @@ loop = do
 timedAndInterruptible :: StateT ReplState (InputT IO) () -> StateT ReplState (InputT IO) ()
 timedAndInterruptible action = do
   state <- get
-  let handler = outputStrLn "Interrupted." >> evalStateT loop state
+  startTime <- liftIO getCPUTime
+  let handler = do
+        outputStrLn "Interrupted."
+        liftIO $ printTimeElapsed startTime
   lift . withInterrupt . handleInterrupt handler . flip evalStateT state $ do
-    startTime <- liftIO getCPUTime
     action
-    endTime <- liftIO getCPUTime
+    liftIO $ printTimeElapsed startTime
+  where
+  printTimeElapsed startTime = do
+    endTime <- getCPUTime
     let elapsed = realToFrac (endTime - startTime) / (1e12 :: Double)
-    lift $ outputStrLn $ "CPU time elapsed: " ++ printf "%.3f s" elapsed
+    putStrLn $ "CPU time elapsed: " ++ printf "%.3f s" elapsed
 
 
 -- * Helper functions
