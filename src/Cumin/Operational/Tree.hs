@@ -63,7 +63,3 @@ limitExceeded :: Maybe Int -> Int -> Bool
 limitExceeded = \case
   Nothing -> const False
   Just depth -> (> depth)
-
--- | Print a tree using a pretty printer for leafs and a traversal function.
-prettyTraverse :: (a -> PP.Doc) -> (Tree a -> [(Int, a)]) -> Tree a -> PP.Doc
-prettyTraverse pp trav tree = PP.align $ PP.vsep (pp . snd <$> trav tree) PP.<> PP.line

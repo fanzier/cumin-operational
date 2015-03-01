@@ -23,6 +23,7 @@ import           Language.CuMin.TypeChecker
 import           System.Console.Haskeline
 import           System.CPUTime
 import           System.Environment            (getArgs)
+import           System.IO
 import qualified Text.PrettyPrint.ANSI.Leijen  as PP
 import           Text.Printf
 import           Text.Trifecta
@@ -185,13 +186,17 @@ loop = do
   forceExpr env _ expr = do
     let forcedExp = runEvalT (force expr) env
     traverseStrategy <- whichTraversal
-    liftIO $ PP.putDoc $ prettyTraverse prettyNFResult traverseStrategy forcedExp
-  prettyNFResult nf = PP.text " = " PP.<> (PP.hang 2 . prettyExp . nfToExp) nf
+    liftIO $ printResults printNFResult traverseStrategy forcedExp
+  printNFResult (_, nf) = do
+    PP.putDoc $ PP.text " = " PP.<> (PP.hang 2 . prettyExp . nfToExp) nf <> PP.line
+    hFlush stdout
   evalExpr env _ expr = do
     let expHeapPair = runEvalWithHeapT (evaluateFunctionally expr) env
     traverseStrategy <- whichTraversal
-    liftIO $ PP.putDoc $ prettyTraverse prettyFNFResult traverseStrategy expHeapPair
-  prettyFNFResult (fnf, heap) = PP.text " ~> " PP.<> (PP.hang 2 . prettyHeapExpPair) (fnfToExp fnf, heap)
+    liftIO $ printResults printFNFResult traverseStrategy expHeapPair
+  printFNFResult (_, (fnf, heap)) = do
+    PP.putDoc $ PP.text " ~> " PP.<> (PP.hang 2 . prettyHeapExpPair) (fnfToExp fnf, heap)
+    hFlush stdout
   whichTraversal = do
     traverseFunction <- use strategy >>= \case
       BFS -> return bfsTraverse
@@ -232,6 +237,10 @@ checkInteractiveExpr expr = do
     includeBuiltIns
     unsafeIncludeModule interactiveMod
     checkExp expr
+
+-- | Print a tree using a pretty printer for leafs and a traversal function.
+printResults :: ((Int, a) -> IO ()) -> (Tree a -> [(Int, a)]) -> Tree a -> IO ()
+printResults pp trav tree = mapM_ pp (trav tree)
 
 prettyHelp :: PP.Doc
 prettyHelp = PP.text "List of commands:" PP.<$>
