@@ -65,14 +65,17 @@ evaluateLogically expr = do
         vName <- addExpToHeap "arg" e
         evaluateLogically $ EApp f (EVar vName)
     ELit _ -> error "Literal is already in FNF."
-    -- PRIM rule:
-    EPrim oper es -> do
-      let [e1, e2] = es
+    -- EQ rule:
+    EPrim PrimEq [e1, e2] -> do
+      result <- testEquality e1 e2
+      let boolString = if result then "True" else "False"
+      return . Fnf $ ConValue boolString [] []
+    -- PLUS rule:
+    EPrim PrimAdd [e1, e2] -> do
       Literal (LNat n1) <- evaluateFunctionally e1
       Literal (LNat n2) <- evaluateFunctionally e2
-      return $ case oper of
-        PrimEq -> Fnf $ if n1 == n2 then ConValue "True" [] [] else ConValue "False" [] []
-        PrimAdd -> Fnf . Literal . LNat $ n1 + n2
+      return . Fnf . Literal . LNat $ n1 + n2
+    EPrim _ _ -> error $ "Illegal primitive operation: " ++ show (prettyExp expr)
     ECon _ _ -> error $ "Constructor is already in FNF: " ++ show (prettyExp expr)
     -- CASE rules:
     ECase scrutinee alts -> do
@@ -116,6 +119,31 @@ tryFunRule args expr = case expr of
       else return Nothing
   EApp f (EVar arg) -> tryFunRule (arg:args) f
   _ -> return Nothing
+
+-- | Test whether the given two expressions evaluate to the same value.
+-- Both functions are evaluated to flat normal form and
+-- False is returned if the constructors differ.
+-- Otherwise the constructor arguments are recursively tested for equality.
+-- As soon as a difference is found, False is returned
+-- and the rest of the expression remains unevaluated.
+-- Only when everything matches, True is returned.
+testEquality :: Exp -> Exp -> EvalT Tree Bool
+testEquality e1 e2 = do
+  e1' <- evaluateFunctionally e1
+  e2' <- evaluateFunctionally e2
+  case (e1', e2') of
+    (Literal (LNat n1), Literal (LNat n2)) -> return $ n1 == n2
+    (ConValue c1 _ vs1, ConValue c2 _ vs2)
+      | c1 == c2 -> testEqualities vs1 vs2
+      | otherwise -> return False
+    _ -> error "Type mismatch. Should be caught in type checker."
+  where
+  testEqualities [] [] = return True
+  testEqualities (v:vs) (w:ws) = testEquality (EVar v) (EVar w) >>= \case
+    True -> testEqualities vs ws
+    False -> return False
+  testEqualities _ _ = error "Type mismatch. Should be caught in type checker."
+
 
 -- * Functional evaluation
 
