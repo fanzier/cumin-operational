@@ -34,6 +34,7 @@ import           Text.Trifecta
 data ReplState = ReplState
   { _strategy :: SearchStrategy -- ^ how to search the computation tree, e.g. BFS
   , _depth    :: Maybe Int      -- ^ depth limit for the search
+  , _file     :: String         -- ^ name of the loaded module
   , _replMod  :: Module         -- ^ currently loaded module
   }
 
@@ -53,6 +54,7 @@ data Property = Property
 data Command
   = Quit
   | Help
+  | Reload
   | Eval Exp
   | Force Exp
   | SetProperty (ReplState -> ReplState)
@@ -64,11 +66,12 @@ makeLenses ''SearchStrategy
 
 -- * Default values
 
-defaultState :: Module -> ReplState
-defaultState modul = ReplState
+defaultState :: ReplState
+defaultState = ReplState
   { _strategy = BFS
   , _depth = Nothing
-  , _replMod = modul
+  , _file = ""
+  , _replMod = undefined
   }
 
 properties :: M.Map String Property
@@ -109,6 +112,8 @@ commandP
         "e" -> evalP
         "eval" -> evalP
         "q" -> quitP
+        "r" -> reloadP
+        "reload" -> reloadP
         "quit" -> quitP
         "help" -> helpP
         "h" -> helpP
@@ -121,6 +126,9 @@ quitP = pure Quit
 
 helpP :: Parser Command
 helpP = pure Help
+
+reloadP :: Parser Command
+reloadP = pure Reload
 
 evalP :: Parser Command
 evalP = Eval <$> expressionP
@@ -146,22 +154,34 @@ expressionP = CP.postProcessExp Set.empty <$> CP.runCuMinParser "<interactive>" 
 main :: IO ()
 main = getArgs >>= \case
   [cuminFile] -> do
-    modul <- checkFile cuminFile
-    putStrLn $ "Loaded module `" ++ _modName modul ++ "`."
     putStrLn "Type \":h\" (without quotes) for help."
-    evalStateT repl (defaultState modul)
+    evalStateT (loadModule cuminFile >> repl) defaultState
   _ -> putStrLn "Usage: cumin-op Module.cumin\nExactly one input file must be specified."
 
-checkFile :: FilePath -> IO Module
+loadModule :: MonadIO m => String -> StateT ReplState m ()
+loadModule cuminFile = do
+  m <- liftIO $ checkFile cuminFile
+  file .= cuminFile
+  case m of
+    Just modul -> do
+      replMod .= modul
+      liftIO $ putStrLn $ "Loaded module `" ++ _modName modul ++ "`."
+    Nothing -> liftIO $ putStrLn $ "Loading file `" ++ cuminFile ++ "` failed."
+
+checkFile :: FilePath -> IO (Maybe Module)
 checkFile cuminFile =
   CM.buildModuleFromFile cuminFile >>= \case
       Left msg -> error $ show msg
       Right modul ->
         case importUnqualified modul preludeModule of
-          Left conflicts -> error $ show conflicts
+          Left (adtConflicts, functionConflicts) -> do
+            putStrLn "Some names in the module conflict with prelude names:"
+            mapM_ (putStrLn . fst) (M.toList adtConflicts)
+            mapM_ (putStrLn . fst) (M.toList functionConflicts)
+            return Nothing
           Right modulWithPrelude -> case evalTC (checkModule modulWithPrelude) def def of
-            Left msg -> error $ show $ PP.pretty msg
-            Right () -> return modulWithPrelude
+            Left msg -> PP.putDoc (PP.pretty msg) >> return Nothing
+            Right () -> return $ Just modulWithPrelude
 
 repl :: StateT ReplState IO ()
 repl = mapStateT (runInputT defaultSettings) loop
@@ -177,6 +197,7 @@ loop = do
       Failure msg -> liftIO (PP.putDoc $ msg PP.<> PP.line) >> loop
       Success cmd -> case cmd of
         Quit -> liftIO $ putStrLn "Bye."
+        Reload -> use file >>= loadModule >> loop
         Eval expr -> timedAndInterruptible (printExprTypeAndThen expr (evalExpr env)) >> loop
         Force expr -> timedAndInterruptible (printExprTypeAndThen expr (forceExpr env)) >> loop
         SetProperty f -> modify f >> loop
