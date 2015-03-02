@@ -171,7 +171,7 @@ loadModule cuminFile = do
 checkFile :: FilePath -> IO (Maybe Module)
 checkFile cuminFile =
   CM.buildModuleFromFile cuminFile >>= \case
-      Left msg -> error $ show msg
+      Left msg -> PP.putDoc (PP.pretty msg) >> return Nothing
       Right modul ->
         case importUnqualified modul preludeModule of
           Left (adtConflicts, functionConflicts) -> do
