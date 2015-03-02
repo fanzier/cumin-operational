@@ -71,7 +71,7 @@ defaultState = ReplState
   { _strategy = BFS
   , _depth = Nothing
   , _file = ""
-  , _replMod = undefined
+  , _replMod = preludeModule
   }
 
 properties :: M.Map String Property
