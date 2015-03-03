@@ -3,7 +3,7 @@
 module Cumin.Operational.Tree where
 
 import           Control.Applicative
-import           Control.Monad                (ap, liftM)
+import           Control.Monad       (ap, liftM)
 
 -- * General Computation Tree Representation
 
@@ -74,24 +74,27 @@ instance TreeLike CTree where
 
 -- | Traverse the tree using breadth-first search.
 bfsTraverse :: Maybe Int -> Tree a -> [(Int, a)]
-bfsTraverse depth tree = go 0 [tree] []
+bfsTraverse depth tree = go 0 [tree]
   where
-  go _ [] [] = []
-  go i [] nextLevel = go (i + 1) nextLevel []
-  go i (t:ts) nextLevel = case t of
-    Leaf a -> (i,a):go i ts nextLevel
-    Branches branches -> case branches of
-      [] -> go i ts nextLevel
-      _ -> go i ts (if limitExceeded depth (i + 1) then [] else nextLevel ++ branches) -- TODO: This is inefficient!
+  go _ [] = []
+  go i ts = map (\a -> (i,a)) thisLevel ++ nextCutOff
+    where
+    (thisLevel, nextLevel) = split ts
+    nextCutOff = if limitExceeded depth (i + 1) then [] else go (i + 1) nextLevel
+  split [] = ([],[])
+  split (t:ts) = let (this, next) = split ts in case t of
+    Leaf a -> (a:this, next)
+    Branches bs -> (this, bs ++ next)
 
 -- | Traverse the tree using depth-first search.
 dfsTraverse :: Maybe Int -> Tree a -> [(Int, a)]
 dfsTraverse depth = go 0
   where
-  go i | limitExceeded depth i = const []
-       | otherwise = \case
+  go i = \case
     Leaf a -> return (i, a)
-    Branches ts -> ts >>= go (i + 1)
+    Branches ts
+      | limitExceeded depth (i + 1) -> []
+      | otherwise -> ts >>= go (i + 1)
 
 -- | Checks whether the depth limit prevents deeper searching.
 limitExceeded :: Maybe Int -> Int -> Bool
