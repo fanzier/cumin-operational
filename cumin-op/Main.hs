@@ -193,7 +193,7 @@ loop = do
   let env = makeEnv modul
   case minput of
     Nothing -> loop
-    Just input -> case parseString commandP mempty input of
+    Just input -> case parseString (commandP <* eof) mempty input of
       Failure msg -> liftIO (PP.putDoc $ msg PP.<> PP.line) >> loop
       Success cmd -> case cmd of
         Quit -> liftIO $ putStrLn "Bye."
