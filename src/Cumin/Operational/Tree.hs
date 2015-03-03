@@ -1,11 +1,28 @@
 {-# LANGUAGE LambdaCase #-}
+{-# LANGUAGE Rank2Types #-}
 module Cumin.Operational.Tree where
 
 import           Control.Applicative
 import           Control.Monad                (ap, liftM)
-import qualified Text.PrettyPrint.ANSI.Leijen as PP
 
--- * Computation Tree Representation
+-- * General Computation Tree Representation
+
+-- | Represents a general monad that can be converted to a tree.
+class (Functor t, Applicative t, Monad t) => TreeLike t where
+  -- | Given a list of alternatives, wrap them in a nondeterministic computation.
+  branch :: [a] -> t a
+  -- | Convert the computation tree to a Tree.
+  toTree :: t a -> Tree a
+
+-- | Creates a nondeterministic computation that fails.
+-- I.e. there are no child nodes.
+failure :: TreeLike t => t a
+failure = branch []
+
+-- | Default choice for the nondeterministic computation tree.
+type TreeM = CTree
+
+-- * Standard tree data type
 
 -- | Represents the nondeterministic result of a computation.
 data Tree a
@@ -26,14 +43,32 @@ instance Applicative Tree where
   pure = return
   (<*>) = ap
 
--- | Given a list of alternatives, wrap them in a nondeterministic computation.
-branch :: [a] -> Tree a
-branch = Branches . map return
+instance TreeLike Tree where
+  branch = Branches . map return
+  toTree = id
 
--- | Creates a nondeterministic computation that fails.
--- I.e. there are no child nodes.
-failure :: Tree a
-failure = branch []
+-- * Codensity transformed tree
+
+-- | Tree data type with the codensity transformation applied.
+newtype CTree a = CTree (forall r. (a -> Tree r) -> Tree r)
+
+instance Functor CTree where
+  fmap = liftM
+
+instance Applicative CTree where
+  pure = return
+  (<*>) = ap
+
+instance Monad CTree where
+  return x = CTree ($ x)
+  (CTree p) >>= f = CTree (\h -> p (\a -> let CTree q = f a in q h))
+
+treeAbs :: CTree a -> Tree a
+treeAbs (CTree p) = p Leaf
+
+instance TreeLike CTree where
+  branch xs = CTree (\h -> Branches (map h xs))
+  toTree = treeAbs
 
 -- * Tree traversals
 

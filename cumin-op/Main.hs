@@ -260,8 +260,8 @@ checkInteractiveExpr expr = do
     checkExp expr
 
 -- | Print a tree using a pretty printer for leafs and a traversal function.
-printResults :: ((Int, a) -> IO ()) -> (Tree a -> [(Int, a)]) -> Tree a -> IO ()
-printResults pp trav tree = mapM_ pp (trav tree)
+printResults :: ((Int, a) -> IO ()) -> (Tree a -> [(Int, a)]) -> TreeM a -> IO ()
+printResults pp trav tree = mapM_ pp (trav (toTree tree))
 
 prettyHelp :: PP.Doc
 prettyHelp = PP.text "List of commands:" PP.<$>

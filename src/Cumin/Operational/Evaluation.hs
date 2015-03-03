@@ -21,7 +21,7 @@ import           Language.CuMin.Pretty
 -- | Evaluates the given expression logically.
 -- This means the result is a value,
 -- i.e. in flat normal form or a logic variable.
-evaluateLogically :: Exp -> EvalT Tree Value
+evaluateLogically :: Exp -> EvalT TreeM Value
 evaluateLogically expr = do
   maybeFNF' <- convertToValue expr
   case maybeFNF' of
@@ -87,7 +87,7 @@ evaluateLogically expr = do
 
 -- | Tries the given alternatives in order.
 -- Returns whenever the first one matches.
-tryAlts :: FNF -> DataConName -> [VarName] -> [Alt] -> EvalT Tree Value
+tryAlts :: FNF -> DataConName -> [VarName] -> [Alt] -> EvalT TreeM Value
 tryAlts scrutinee conName argVars = go
   where
   go = \case
@@ -127,7 +127,7 @@ tryFunRule args expr = case expr of
 -- As soon as a difference is found, False is returned
 -- and the rest of the expression remains unevaluated.
 -- Only when everything matches, True is returned.
-testEquality :: Exp -> Exp -> EvalT Tree Bool
+testEquality :: Exp -> Exp -> EvalT TreeM Bool
 testEquality e1 e2 = do
   e1' <- evaluateFunctionally e1
   e2' <- evaluateFunctionally e2
@@ -149,10 +149,10 @@ testEquality e1 e2 = do
 
 -- | Evaluates the given heap expression pair functionally.
 -- This means the result is in flat normal form.
-evaluateFunctionally :: Exp -> EvalT Tree FNF
+evaluateFunctionally :: Exp -> EvalT TreeM FNF
 evaluateFunctionally = evaluateLogically >=> handleLogicVars
 
-handleLogicVars :: Value -> EvalT Tree FNF
+handleLogicVars :: Value -> EvalT TreeM FNF
 handleLogicVars fnfOrLogic = case fnfOrLogic of
   -- FNF rule:
   Fnf fnfValue -> return fnfValue
@@ -174,7 +174,7 @@ guessRule
   -> [TVName] -- ^ the type var names of the ADT
   -> [Type] -- ^ the type instantiations for the ADT type vars
   -> ConDecl -- ^ the constructor declaration of the chosen constructor
-  -> EvalT Tree FNF
+  -> EvalT TreeM FNF
 guessRule v tvNames tyArgs conDecl@(ConDecl con _) = do
   let Just types = instantiateConDecl tvNames tyArgs conDecl
   conArgs <- mapM (addFreeToHeap "conArg") types
@@ -184,13 +184,13 @@ guessRule v tvNames tyArgs conDecl@(ConDecl con _) = do
 
 -- | Generates all natural numbers whose binary representation is longer than
 -- the given parameter.
-branchNatLongerThan :: Integer -> Tree Integer
+branchNatLongerThan :: Integer -> TreeM Integer
 branchNatLongerThan i = do
   b <- branch [True, False]
   if b then natsOfLength i else branchNatLongerThan (succ i)
 
 -- | Generates all natural numbers who have the given number of binary digits.
-natsOfLength :: Integer -> Tree Integer
+natsOfLength :: Integer -> TreeM Integer
 natsOfLength i | i <= 0 = return 0
                | otherwise = branch [2 ^ (i - 1) .. 2 ^ i - 1]
 
@@ -198,7 +198,7 @@ natsOfLength i | i <= 0 = return 0
 
 -- | Forces the expression to normal form.
 -- It fully evaluates all constructor and function arguments.
-force :: Exp -> EvalT Tree NF
+force :: Exp -> EvalT TreeM NF
 force = evaluateFunctionally >=> \case
   PartialApp fun tys vs -> NfPartial fun tys <$> forceList vs
   ConValue con tys vs -> NfCon con tys <$> forceList vs
