@@ -22,7 +22,7 @@ library
                    , Cumin.Operational.NormalForms
                    , Cumin.Operational.Tree
                    , Cumin.Operational.Util
-  ghc-options:  -Wall
+  ghc-options:  -Wall -O2
   hs-source-dirs:  src
   build-depends:   base
                  , containers
@@ -38,7 +38,7 @@ executable cumin-op
   main-is: Main.hs
   -- other-modules:       
   -- other-extensions:
-  ghc-options: -Wall
+  ghc-options: -Wall -O2
   build-depends:       base >=4.7 && <4.8
                      , containers
                      , lens
