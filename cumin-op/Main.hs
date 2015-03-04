@@ -268,6 +268,7 @@ prettyHelp = PP.text "List of commands:" PP.<$>
   PP.vsep (map (PP.hang 8 . (PP.text " * " PP.<>))
     [ PP.text ":h, :help" PP.<$> PP.text "Show this help text."
     , PP.text ":q, :quit" PP.<$> PP.text "Quit the program."
+    , PP.text ":r, :reload" PP.<$> PP.text "Reload the current module."
     , PP.text ":f <expr>, :force <expr>, <expr>" PP.<$> PP.text "Force the expression <expr> to head normal form."
     , PP.text ":e <expr>, :eval <expr>" PP.<$> PP.text "Evaluate the expression <expr> to flat normal form."
     , PP.text ":g, :get" PP.<$> PP.text "List all configurable properties and their current values."
