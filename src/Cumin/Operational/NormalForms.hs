@@ -9,20 +9,20 @@ data FNF
   = PartialApp BindingName [Type] [VarName]
   | ConValue DataConName [Type] [VarName]
   | Literal Lit
-  deriving (Show)
+  deriving (Show, Eq)
 
 -- | An expression that is in flat normal form or a logic variable
 data Value
   = Fnf FNF
   | Logic VarName Type
-  deriving (Show)
+  deriving (Show, Eq)
 
 -- | An expression that is in normal form, i.e. fully evaluated.
 data NF
   = NfPartial BindingName [Type] [NF]
   | NfCon DataConName [Type] [NF]
   | NfLiteral Lit
-  deriving (Show)
+  deriving (Show, Eq)
 
 -- * Conversion functions
 

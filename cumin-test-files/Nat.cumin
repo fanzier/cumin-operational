@@ -1,0 +1,8 @@
+minus :: Nat -> Nat -> Nat
+minus m n = let x :: Nat free in case n + x == m of
+  True -> x
+
+times :: Nat -> Nat -> Nat
+times m n = case m == 0 of
+  True -> 0
+  False -> n + times (minus m 1) n

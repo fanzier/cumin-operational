@@ -53,3 +53,22 @@ executable cumin-op
                      , cumin-operational
   hs-source-dirs:      cumin-op
   default-language:    Haskell2010
+
+test-suite cumin-test
+  main-is: Main.hs
+  ghc-options: -Wall -O2
+  build-depends:       base >=4.7 && <4.8
+                     , containers
+                     , lens
+                     , mtl
+                     , data-default-class
+                     , trifecta
+                     , ansi-wl-pprint
+                     , transformers
+                     , funlogic-core
+                     , language-cumin
+                     , cumin-operational
+                     , hspec
+  hs-source-dirs:      cumin-test
+  default-language:    Haskell2010
+  type:                exitcode-stdio-1.0
