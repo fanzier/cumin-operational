@@ -216,7 +216,7 @@ loop = do
     traverseStrategy <- whichTraversal
     liftIO $ printResults printFNFResult traverseStrategy expHeapPair
   printFNFResult (_, (fnf, heap)) = do
-    PP.putDoc $ PP.text " ~> " PP.<> (PP.hang 2 . prettyHeapExpPair) (fnfToExp fnf, heap)
+    PP.putDoc $ PP.text " ~> " PP.<> (PP.hang 2 . prettyHeapExpPair) (fnfToExp fnf, heap) PP.<> PP.line
     hFlush stdout
   whichTraversal = do
     traverseFunction <- use strategy >>= \case
@@ -239,7 +239,7 @@ timedAndInterruptible action = do
   printTimeElapsed startTime = do
     endTime <- getCPUTime
     let elapsed = realToFrac (endTime - startTime) / (1e12 :: Double)
-    putStrLn $ "CPU time elapsed: " ++ printf "%.3f s" elapsed
+    putStrLn $ "\nCPU time elapsed: " ++ printf "%.3f s" elapsed
 
 
 -- * Helper functions
