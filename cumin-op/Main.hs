@@ -78,11 +78,11 @@ properties :: M.Map String Property
 properties = M.fromList
   [ ("depth", Property
     { _propertyName = "depth"
-    , _propertyP = set depth <$> ((Nothing <$ string "none") <|> (Just . fromInteger <$> natural))
-    , _propertyDescription = "The search depth limit. Values: none, 0, 1, 2, ..."
+    , _propertyP = set depth <$> ((Nothing <$ string "inf") <|> (Just . fromInteger <$> natural))
+    , _propertyDescription = "The search depth limit. Values: inf, 0, 1, 2, ..."
     , _propertyGet = view depth >>= \case
         Just d -> return $ show d
-        Nothing -> return "none"
+        Nothing -> return "inf"
     })
   , ("strategy", Property
       { _propertyName = "strategy"
@@ -269,7 +269,7 @@ prettyHelp = PP.text "List of commands:" PP.<$>
     [ PP.text ":h, :help" PP.<$> PP.text "Show this help text."
     , PP.text ":q, :quit" PP.<$> PP.text "Quit the program."
     , PP.text ":r, :reload" PP.<$> PP.text "Reload the current module."
-    , PP.text ":f <expr>, :force <expr>, <expr>" PP.<$> PP.text "Force the expression <expr> to head normal form."
+    , PP.text ":f <expr>, :force <expr>, <expr>" PP.<$> PP.text "Force the expression <expr> to reduced normal form."
     , PP.text ":e <expr>, :eval <expr>" PP.<$> PP.text "Evaluate the expression <expr> to flat normal form."
     , PP.text ":g, :get" PP.<$> PP.text "List all configurable properties and their current values."
     , PP.text ":s <prop>=<val>, :set <prop>=<val>" PP.<$> PP.text "Set property <prop> to value <val>. For details use ':get'."
