@@ -75,3 +75,23 @@ test-suite cumin-test
   hs-source-dirs:      cumin-test
   default-language:    Haskell2010
   type:                exitcode-stdio-1.0
+
+executable cumin-bench
+  main-is: Main.hs
+  ghc-options: -Wall -O2
+  build-depends:       base               == 4.7.*
+                     , containers         ==0.5.*
+                     , lens               ==4.4.*
+                     , mtl                ==2.1.*
+                     , data-default-class
+                     , trifecta           ==1.4.*
+                     , ansi-wl-pprint     ==0.6.*
+                     , transformers       ==0.3.*
+                     , funlogic-core
+                     , language-cumin
+                     , cumin-operational
+                     , criterion
+                     , deepseq
+  hs-source-dirs:      cumin-bench
+  default-language:    Haskell2010
+
