@@ -69,6 +69,9 @@ test-suite cumin-test
                      , language-cumin
                      , cumin-operational
                      , hspec              ==1.12.*
+                     , logict             ==0.6.*
+                     , denotational-funlogic
+                     , denotational-cumin
   hs-source-dirs:      cumin-test
   default-language:    Haskell2010
   type:                exitcode-stdio-1.0
