@@ -73,11 +73,11 @@ instance TreeLike CTree where
 -- * Tree traversals
 
 -- | Traverse the tree using breadth-first search.
-bfsTraverse :: Maybe Int -> Tree a -> [(Int, a)]
+bfsTraverse :: Maybe Int -> Tree a -> [a]
 bfsTraverse depth tree = go 0 [tree]
   where
   go _ [] = []
-  go i ts = map (\a -> (i,a)) thisLevel ++ nextCutOff
+  go i ts = thisLevel ++ nextCutOff
     where
     (thisLevel, nextLevel) = split ts
     nextCutOff = if limitExceeded depth (i + 1) then [] else go (i + 1) nextLevel
@@ -87,11 +87,11 @@ bfsTraverse depth tree = go 0 [tree]
     Branches bs -> (this, bs ++ next)
 
 -- | Traverse the tree using depth-first search.
-dfsTraverse :: Maybe Int -> Tree a -> [(Int, a)]
+dfsTraverse :: Maybe Int -> Tree a -> [a]
 dfsTraverse depth = go 0
   where
   go i = \case
-    Leaf a -> return (i, a)
+    Leaf a -> return a
     Branches ts
       | limitExceeded depth (i + 1) -> []
       | otherwise -> ts >>= go (i + 1)

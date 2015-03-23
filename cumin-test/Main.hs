@@ -55,7 +55,7 @@ shouldSatisfyForced modul test expect f = do
   denotational = evalDenotational modul test
 
 evalOperational :: Module -> Exp -> [NF]
-evalOperational modul e = map snd . bfsTraverse Nothing . toTree $ runEvalT (force e) (makeEnv modul)
+evalOperational modul e = bfsTraverse Nothing . toTree $ runEvalT (force e) (makeEnv modul)
 
 evalDenotational :: Module -> Exp -> [NF]
 evalDenotational modul e = mapMaybe toNf $ Search.observeAll (CD.runEval (CD.eval e) modul CD.StepInfinity id :: BFSMonad (CD.Value BFSMonad))

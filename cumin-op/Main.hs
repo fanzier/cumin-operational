@@ -208,14 +208,14 @@ loop = do
     let forcedExp = runEvalT (force expr) env
     traverseStrategy <- whichTraversal
     liftIO $ printResults printNFResult traverseStrategy forcedExp
-  printNFResult (_, nf) = do
+  printNFResult nf = do
     PP.putDoc $ PP.text " = " PP.<> (PP.hang 2 . prettyExp . nfToExp) nf <> PP.line
     hFlush stdout
   evalExpr env _ expr = do
     let expHeapPair = runEvalWithHeapT (evaluateFunctionally expr) env
     traverseStrategy <- whichTraversal
     liftIO $ printResults printFNFResult traverseStrategy expHeapPair
-  printFNFResult (_, (fnf, heap)) = do
+  printFNFResult (fnf, heap) = do
     PP.putDoc $ PP.text " ~> " PP.<> (PP.hang 2 . prettyHeapExpPair) (fnfToExp fnf, heap) PP.<> PP.line
     hFlush stdout
   whichTraversal = do
@@ -260,7 +260,7 @@ checkInteractiveExpr expr = do
     checkExp expr
 
 -- | Print a tree using a pretty printer for leafs and a traversal function.
-printResults :: ((Int, a) -> IO ()) -> (Tree a -> [(Int, a)]) -> TreeM a -> IO ()
+printResults :: (a -> IO ()) -> (Tree a -> [a]) -> TreeM a -> IO ()
 printResults pp trav tree = mapM_ pp (trav (toTree tree))
 
 prettyHelp :: PP.Doc
