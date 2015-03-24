@@ -12,18 +12,36 @@ import           FunLogic.Core.AST
 import           Language.CuMin.AST
 
 -- * Substitutions with fresh variables
+-- All of them assume that the replacement variable names are fresh.
+-- Otherwise variables may get captured.
 
--- | This assumes that the substituted var name are fresh!
-substitute1 :: (TVName -> Type) -> VarName -> VarName -> Exp -> Exp
+-- | Substitute one variable for one other in an expression.
+-- This assumes that the substituted var name are fresh!
+substitute1
+  :: (TVName -> Type) -- ^ type variable instantiations
+  -> VarName -- ^ to be substited
+  -> VarName -- ^ replacement
+  -> Exp -- ^ expression to be modified
+  -> Exp
 substitute1 f v w = substitute f (\x -> if x == v then Just w else Nothing)
 
--- | This assumes that the substituted var names are fresh!
-substituteMany :: (TVName -> Type) -> [VarName] -> [VarName] -> Exp -> Exp
+-- | Substitute more than one variable in an expression.
+-- This assumes that the substituted var names are fresh!
+substituteMany
+  :: (TVName -> Type) -- ^ type variable instantiations
+  -> [VarName] -- ^ variables to be substited
+  -> [VarName] -- ^ replacements
+  -> Exp -- ^ expression to be modified
+  -> Exp
 substituteMany f vs ws = substitute f (\x -> (ws !!) <$> x `elemIndex` vs)
 
--- | This assumes that the substituted var names are fresh!
--- Otherwise variables can get captured
-substitute :: (TVName -> Type) -> (VarName -> Maybe VarName) -> Exp -> Exp
+-- | General function for substituting variables in expressions.
+-- This assumes that the substituted var names are fresh!
+substitute
+ :: (TVName -> Type) -- ^ type variable instantiations
+ -> (VarName -> Maybe VarName) -- ^ variable substitutions (Nothing means no substitution)
+ -> Exp -- ^ expression to be modified
+ -> Exp
 substitute f subs e = case e of
   EVar v -> case subs v of
     Just w -> EVar w
@@ -38,19 +56,25 @@ substitute f subs e = case e of
   ECon c tys -> ECon c (map (substituteInType f) tys)
   ECase scrutinee alts -> ECase (substitute f subs scrutinee) (map (substituteAlt f subs) alts)
 
--- | This assumes that the substituted var names are fresh!
+-- | General substitution function for case alternatives
+-- This assumes that the substituted var names are fresh!
 substituteAlt :: (TVName -> Type) -> (VarName -> Maybe VarName) -> Alt -> Alt
 substituteAlt f subs (Alt pat e) = case pat of
   PCon _ vs -> Alt pat (substitute f (\x -> if x `elem` vs then Nothing else subs x) e)
   PVar v -> Alt pat (substitute f (\x -> if x == v then Nothing else subs x) e)
 
-substituteInType :: (TVName -> Type) -> Type -> Type
+-- | Instantiate type variables to types in a type.
+substituteInType
+ :: (TVName -> Type) -- ^ type variable instantiations
+ -> Type -- ^ uninstantiated type
+ -> Type
 substituteInType f = \case
   TVar v -> f v
   TCon c tys -> TCon c $ map (substituteInType f) tys
 
 -- * Conversions to normal forms if possible
 
+-- | Converts an Exp to an FNF if it is in flat normal form.
 convertToFNF :: Monad m => Exp -> EvalT m (Maybe FNF)
 convertToFNF = go []
   where
@@ -66,6 +90,7 @@ convertToFNF = go []
         else Nothing
     _ -> return Nothing
 
+-- | Converts an Exp to a Value if it is a value.
 convertToValue :: Monad m => Exp -> EvalT m (Maybe Value)
 convertToValue expr = case expr of
   EVar v -> lookupVar v >>= \case
@@ -77,7 +102,12 @@ convertToValue expr = case expr of
 
 -- * Type helper
 
-instantiateConDecl :: [String] -> [Type] -> ConDecl -> Maybe [Type]
+-- | Instantiate type variables in the types of constructor arguments.
+instantiateConDecl
+  :: [TVName] -- ^ type variables to be instantiated
+  -> [Type] -- ^ instantiations
+  -> ConDecl -- ^ the constructor declaration
+  -> Maybe [Type]
 instantiateConDecl tyVars tyArgs (ConDecl _ tys) = do
   let
     subst = M.fromList $ zip tyVars tyArgs

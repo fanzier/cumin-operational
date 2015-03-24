@@ -56,7 +56,7 @@ evaluateLogically expr = do
     -- First, try to use FUN rule:
       | EVar v <- e -> tryFunRule [v] f >>= \case
         Just expression -> evaluateLogically expression
-    -- If FUN fails, try APPLY rule:
+    -- If FUN fails, try the APPLY rule:
         Nothing -> do
           f' <- evaluateLogically f
           evaluateLogically $ EApp (valueToExp f') e
@@ -65,7 +65,7 @@ evaluateLogically expr = do
         vName <- addExpToHeap "arg" e
         evaluateLogically $ EApp f (EVar vName)
     ELit _ -> error "Literal is already in FNF."
-    -- EQ rule:
+    -- EQ rules:
     EPrim PrimEq [e1, e2] -> do
       result <- testEquality e1 e2
       let boolString = if result then "True" else "False"

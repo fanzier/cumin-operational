@@ -17,7 +17,7 @@ data Value
   | Logic VarName Type
   deriving (Show, Eq)
 
--- | An expression that is in normal form, i.e. fully evaluated.
+-- | An expression that is in reduced normal form, i.e. fully evaluated.
 data NF
   = NfPartial BindingName [Type] [NF]
   | NfCon DataConName [Type] [NF]

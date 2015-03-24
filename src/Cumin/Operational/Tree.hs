@@ -30,6 +30,7 @@ data Tree a
   | Branches [Tree a] -- ^ nondeterministic choice between computations
   deriving (Show)
 
+-- | Monad instance for substitution on the leafs.
 instance Monad Tree where
   return = Leaf
   m >>= f = case m of
@@ -47,7 +48,7 @@ instance TreeLike Tree where
   branch = Branches . map return
   toTree = id
 
--- * Codensity transformed tree
+-- * Codensity transformed tree (for better performance)
 
 -- | Tree data type with the codensity transformation applied.
 newtype CTree a = CTree (forall r. (a -> Tree r) -> Tree r)

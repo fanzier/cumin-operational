@@ -38,6 +38,7 @@ data ReplState = ReplState
   , _replMod  :: Module         -- ^ currently loaded module
   }
 
+-- | The search strategy
 data SearchStrategy
   = BFS
   | DFS
@@ -74,6 +75,7 @@ defaultState = ReplState
   , _replMod = preludeModule
   }
 
+-- | Default property values of the REPL.
 properties :: M.Map String Property
 properties = M.fromList
   [ ("depth", Property
@@ -158,7 +160,8 @@ main = getArgs >>= \case
     evalStateT (loadModule cuminFile >> repl) defaultState
   _ -> putStrLn "Usage: cumin-op Module.cumin\nExactly one input file must be specified."
 
-loadModule :: MonadIO m => String -> StateT ReplState m ()
+-- | Load a module from a file.
+loadModule :: MonadIO m => FilePath -> StateT ReplState m ()
 loadModule cuminFile = do
   m <- liftIO $ checkFile cuminFile
   file .= cuminFile
@@ -168,6 +171,7 @@ loadModule cuminFile = do
       liftIO $ putStrLn $ "Loaded module `" ++ _modName modul ++ "`."
     Nothing -> liftIO $ putStrLn $ "Loading file `" ++ cuminFile ++ "` failed."
 
+-- | Check that the module from a file is a valid module and return it.
 checkFile :: FilePath -> IO (Maybe Module)
 checkFile cuminFile =
   CM.buildModuleFromFile cuminFile >>= \case
@@ -183,9 +187,11 @@ checkFile cuminFile =
             Left msg -> PP.putDoc (PP.pretty msg) >> return Nothing
             Right () -> return $ Just modulWithPrelude
 
+-- | Function that starts the REPL.
 repl :: StateT ReplState IO ()
 repl = mapStateT (runInputT defaultSettings) loop
 
+-- | Function that is the loop of the REPL.
 loop :: StateT ReplState (InputT IO) ()
 loop = do
   minput <- lift $ getInputLine "> "
@@ -225,6 +231,7 @@ loop = do
     depthLimit <- use depth
     return $ traverseFunction depthLimit
 
+-- | Measures the time of an action to execute and allows it to be interrupted by Ctrl + C.
 timedAndInterruptible :: StateT ReplState (InputT IO) () -> StateT ReplState (InputT IO) ()
 timedAndInterruptible action = do
   state <- get
@@ -244,6 +251,7 @@ timedAndInterruptible action = do
 
 -- * Helper functions
 
+-- | Print the type of an expression and call the given continuation.
 printExprTypeAndThen :: Exp -> (Type -> Exp -> StateT ReplState (InputT IO) ()) -> StateT ReplState (InputT IO) ()
 printExprTypeAndThen expr cont = checkInteractiveExpr expr >>= \case
   Left tyerr -> liftIO $ PP.putDoc $ PP.pretty tyerr PP.<> PP.line
@@ -251,6 +259,7 @@ printExprTypeAndThen expr cont = checkInteractiveExpr expr >>= \case
     liftIO $ PP.putDoc $ PP.text " :: " PP.<> prettyType ty PP.<> PP.line
     cont ty expr
 
+-- | Type check the given input expression.
 checkInteractiveExpr :: MonadState ReplState m => Exp -> m (Either (TCErr CuMinErrCtx) Type)
 checkInteractiveExpr expr = do
   interactiveMod <- use replMod
@@ -263,6 +272,7 @@ checkInteractiveExpr expr = do
 printResults :: (a -> IO ()) -> (Tree a -> [a]) -> TreeM a -> IO ()
 printResults pp trav tree = mapM_ pp (trav (toTree tree))
 
+-- | Help text
 prettyHelp :: PP.Doc
 prettyHelp = PP.text "List of commands:" PP.<$>
   PP.vsep (map (PP.hang 8 . (PP.text " * " PP.<>))
@@ -276,6 +286,7 @@ prettyHelp = PP.text "List of commands:" PP.<$>
     ]
   )
 
+-- | List the properties (settings) of the REPL and their current values.
 prettyProperties :: StateT ReplState (InputT IO) PP.Doc
 prettyProperties =  ((PP.text "Current settings:" PP.<> PP.line) PP.<>) <$> do
   s <- get
