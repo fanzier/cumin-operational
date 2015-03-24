@@ -1,0 +1,114 @@
+data Peano = Z | S Peano
+
+one :: Peano
+one = S Z
+
+two :: Peano
+two = S (S Z)
+
+three :: Peano
+three = S (S (S Z))
+
+four :: Peano
+four = S (S (S (S Z)))
+
+five :: Peano
+five = S (S (S (S (S Z))))
+
+six :: Peano
+six = S (S (S (S (S (S Z)))))
+
+seven :: Peano
+seven = S (S (S (S (S (S (S Z))))))
+
+eight :: Peano
+eight = S (S (S (S (S (S (S (S Z)))))))
+
+nine :: Peano
+nine = S (S (S (S (S (S (S (S (S Z))))))))
+
+ten :: Peano
+ten = S (S (S (S (S (S (S (S (S (S Z)))))))))
+
+hundred :: Peano
+hundred = let t = ten in timesP t t
+
+thousand :: Peano
+thousand = timesP ten hundred
+
+ten4 :: Peano
+ten4 = let h = hundred in timesP h h
+
+plusP :: Peano -> Peano -> Peano
+plusP m n = case m of
+  Z -> n
+  S p -> S (plusP p n)
+
+minusP :: Peano -> Peano -> Peano
+minusP m n = let x :: Peano free in guard<:Peano:> (plusP n x == m) x
+
+timesP :: Peano -> Peano -> Peano
+timesP m n = case m of
+  Z -> Z
+  S p -> plusP n (timesP p n)
+
+peanoToNat :: Peano -> Nat
+peanoToNat n = case n of
+  Z -> 0
+  S p -> peanoToNat p + 1
+
+powP :: Peano -> Peano -> Peano
+powP m n = case n of
+  Z -> S Z
+  S n' -> timesP m (powP m n')
+
+leq :: Peano -> Peano -> Bool
+leq m n = case m of
+  Z -> True
+  S m' -> case n of
+    Z -> False
+    S n' -> leq m' n'
+
+benchSub :: Nat
+benchSub = peanoToNat (minusP thousand hundred)
+
+benchDiv :: Nat
+benchDiv = peanoToNat (let f :: Peano free in guard<:Peano:> (timesP two f == hundred) f)
+
+{- LAST -}
+
+append :: forall a. List a -> List a -> List a
+append xs ys = case xs of
+  Nil -> ys
+  Cons x xs -> Cons<:a:> x (append<:a:> xs ys)
+
+last :: forall a. Data a => List a -> a
+last list =
+  let e:: a free in
+  let init :: List a free in
+  guard<:a:> (append<:a:> init (Cons<:a:> e Nil<:a:>) == list) e
+
+{- PERMUTATION SORT -}
+
+sorted :: List Peano -> Bool
+sorted list = case list of
+  Nil -> True
+  Cons x xss -> case xss of
+    Nil -> True
+    Cons y xs -> and (leq x y) (sorted xss)
+
+insert :: forall a. a -> List a -> List a
+insert x list = case list of
+  Nil -> Cons<:a:> x Nil<:a:>
+  Cons first rest -> choose<:List a:>
+    (Cons<:a:> x list)
+    (Cons<:a:> first (insert<:a:> x rest))
+
+permute :: forall a. List a -> List a
+permute list = case list of
+  Nil -> Nil<:a:>
+  Cons first rest -> insert<:a:> first (permute<:a:> rest)
+
+sort :: List Peano -> List Peano
+sort list = let l = permute<:Peano:> list
+  in guard<:List Peano:> (sorted l) l

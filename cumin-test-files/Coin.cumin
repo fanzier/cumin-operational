@@ -1,0 +1,11 @@
+coin :: Nat
+coin = choose<:Nat:> 0 1
+
+double :: Nat -> Nat
+double x = x + x
+
+maybeDouble1 :: Nat -> Nat
+maybeDouble1 = choose<:Nat -> Nat:> id<:Nat:> double
+
+maybeDouble2 :: Nat -> Nat
+maybeDouble2 n = maybeDouble1 n

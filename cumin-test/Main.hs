@@ -41,11 +41,43 @@ spec = do
     describe "multiplies correctly" $
           shouldSatisfyForced modul [cuminExp|times<::> 3 3|] [cuminExp|9|]
             (shouldBe `on` head)
+  describe "Coin tests" $ do
+    Just modul <- runIO $ checkFile "cumin-test-files/Coin.cumin"
+    it "coin + coin gives right number of results" $
+      length (evalOperational modul [cuminExp|coin<::> + coin<::>|]) `shouldBe` 4
+    it "double coin gives right number of results" $
+      length (evalOperational modul [cuminExp|double<::> coin<::>|]) `shouldBe` 2
+    it "map maybeDouble1 gives right number of results" $
+          length (evalOperational modul [cuminExp|map<:Nat,Nat:> maybeDouble1<::> [1,3]<:Nat:>|]) `shouldBe` 2
+    it "map maybeDouble2 gives right number of results" $
+          length (evalOperational modul [cuminExp|map<:Nat,Nat:> maybeDouble2<::> [1,3]<:Nat:>|]) `shouldBe` 4
+  describe "List tests" $ do
+    Just modul <- runIO $ checkFile "cumin-test-files/List.cumin"
+    it "permute gives right number of results" $
+      length (evalOperational modul [cuminExp|permute<:Nat:> [1,2,3,4]<:Nat:>|]) `shouldBe` 24
+    describe "list sorting works" $
+      shouldBeForcedTo modul [cuminExp|sort<::> [three<::>, two<::>, one<::>]<:Peano:>|] [cuminExp|[one<::>,two<::>,three<::>]<:Peano:>|]
+    describe "last function works" $
+      shouldSatisfyForced modul [cuminExp|last<:Bool:> [True, True, False, True]<:Bool:>|] [cuminExp|True|]
+        (shouldBe `on` head)
+  describe "Miscellaneous tests" $ do
+    Just modul <- runIO $ checkFile "cumin-test-files/Misc.cumin"
+    describe "right case semantics" $ do
+      describe "test 1" $
+        shouldBeForcedTo modul [cuminExp|caseFailure<:Bool:> []<:Bool:>|] [cuminExp|failed<:List Bool:>|]
+      describe "test 2" $
+        shouldBeForcedTo modul [cuminExp|caseFailure<:Bool:> [1]<:Bool:>|] [cuminExp|[1]<:Bool:>|]
+      describe "test 3" $
+        shouldBeForcedTo modul [cuminExp|caseFailure<:Bool:> failed<:List Bool:>|] [cuminExp|failed<:List Bool:>|]
+    describe "let shadowing works correctly" $
+      shouldBeForcedTo modul [cuminExp|letTest0<::>|] [cuminExp|0|]
 
+-- | Specifies that the normal forms of the two given expressions should be the same.
 shouldBeForcedTo :: Module -> Exp -> Exp -> Spec
 shouldBeForcedTo modul test expect =
   shouldSatisfyForced modul test expect shouldBe
 
+-- | Specifies that the normal forms of the two given expressions should satisfy a condition.
 shouldSatisfyForced :: Module -> Exp -> Exp -> ([NF] -> [NF] -> Expectation) -> Spec
 shouldSatisfyForced modul test expect f = do
   it "evaluates as expected" $ f testForced expectForced
@@ -54,12 +86,15 @@ shouldSatisfyForced modul test expect f = do
   [testForced, expectForced] = map (evalOperational modul) [test, expect]
   denotational = evalDenotational modul test
 
+-- | Force an expression to reduced normal form, operationally.
 evalOperational :: Module -> Exp -> [NF]
 evalOperational modul e = bfsTraverse Nothing . toTree $ runEvalT (force e) (makeEnv modul)
 
+-- | Force an expression to reduced normal form, denotationally.
 evalDenotational :: Module -> Exp -> [NF]
 evalDenotational modul e = mapMaybe toNf $ Search.observeAll (CD.runEval (CD.eval e) modul CD.StepInfinity id :: BFSMonad (CD.Value BFSMonad))
 
+-- | Transforms a Value to NF if it contains no bottoms are partial function applications.
 toNf :: CD.Value n -> Maybe NF
 toNf = \case
   CD.VCon c vs tys -> NfCon c tys <$> traverse toNf vs
