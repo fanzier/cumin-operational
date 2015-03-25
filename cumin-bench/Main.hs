@@ -6,8 +6,6 @@ import Language.CuMin
 import qualified Data.Map as M
 import Data.Default.Class
 import qualified Text.PrettyPrint.ANSI.Leijen  as PP
-import Data.Function
-import Control.Applicative
 import Criterion.Main
 import Control.DeepSeq (NFData (..))
 
