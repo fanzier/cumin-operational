@@ -135,10 +135,10 @@ withoutVar v m = do
 -- * Pretty printing
 
 prettyHeapExpPair :: (Exp, Heap) -> PP.Doc
-prettyHeapExpPair (e,heap) = prettyHeap heap PP.</> PP.text "⊢ " PP.<> prettyExp e
+prettyHeapExpPair (e,heap) = prettyHeap heap PP.</> PP.text ": " PP.<> prettyExp e
 
 prettyHeap :: Heap -> PP.Doc
-prettyHeap heap = PP.list $ map (\(v,item) -> PP.text v PP.<> PP.text " →" PP.</> prettyHeapItem item) $ M.toList heap
+prettyHeap heap = PP.list $ map (\(v,item) -> PP.text v PP.<> PP.text " ->" PP.</> prettyHeapItem item) $ M.toList heap
 
 prettyHeapItem :: HeapItem -> PP.Doc
 prettyHeapItem = \case
